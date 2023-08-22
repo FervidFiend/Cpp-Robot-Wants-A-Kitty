@@ -1,2 +1,14 @@
 # Cpp-Robot-Wants-A-Kitty
 My C++ Remake of the old (2010?) flash game Robot Wants A Kitty.
+
+# Screenshots
+
+![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/a0e130e0-4885-40dd-96a9-5916c46fc0c0)
+
+![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/7225ab61-d9cf-46dd-8103-ea11f2aa31b1)
+
+![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/3504009a-4481-4bd4-ac6e-d8fe03e000db)
+
+![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/f60bbb3c-8675-4e92-9952-039cc936a094)
+
+![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/7a1aa93b-8438-47d4-962f-cbc8fce5ce39)
