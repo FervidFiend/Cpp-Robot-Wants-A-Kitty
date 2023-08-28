@@ -8,6 +8,8 @@ All credits and huge respect goes to Mike Hommel ([Hamumu Software](https://hamu
 
 # Screenshots
 
+![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/09db80ac-226f-445f-9367-cc9bf43b75bf)
+
 ![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/a0e130e0-4885-40dd-96a9-5916c46fc0c0)
 
 ![image](https://github.com/FervidFiend/Cpp-Robot-Wants-A-Kitty/assets/72779678/7225ab61-d9cf-46dd-8103-ea11f2aa31b1)
