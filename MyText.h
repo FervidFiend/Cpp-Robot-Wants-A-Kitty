@@ -15,11 +15,12 @@ public:
 
     }
 
-    MyText(std::string textContents, sf::Font& font, int fontSize, sf::Vector2f _screenSize, sf::Vector2f _pos, bool _centered = false) {
+    // Warning! using _centeredToScreen = true converts the pos into normalized (0-1) values
+    MyText(std::string textContents, sf::Font& font, int fontSize, sf::Vector2f _screenSize, sf::Vector2f _pos, bool _centeredToScreen = false) {
         text = sf::Text(textContents, font, fontSize);
         screenSize = _screenSize;
         pos = _pos;
-        centered = _centered;
+        centered = _centeredToScreen;
 
         UpdateText(textContents);
     }

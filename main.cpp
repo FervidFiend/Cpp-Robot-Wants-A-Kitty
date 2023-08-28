@@ -2,6 +2,8 @@
 #include "gameMap.h"
 #include "SoundHelper.h"
 
+#include <windows.h>
+
 float exponentialFade(float popupTextScreenTime, float popupTextDesiredScreenTime, float popupTextDesiredFadeOutTime, float factor) {
     float elapsedTime = std::max(popupTextScreenTime - popupTextDesiredScreenTime, 0.0f);
     float fadeFactor = pow(elapsedTime / popupTextDesiredFadeOutTime, factor);
@@ -10,20 +12,217 @@ float exponentialFade(float popupTextScreenTime, float popupTextDesiredScreenTim
 }
 
 
+
+
+
+
+
+std::vector<std::vector<AnimatedRect>> backgroundRects; // Container for your background tiles
+sf::Vector2i gameMapSize(22, 15); // Size of your map in tiles
+sf::Vector2f spriteScreenSize = sf::Vector2f(32, 32); // size of each tile on the screen
+sf::Vector2f spriteImageSize = sf::Vector2f(16, 16); // size of each tile in the sprite sheet
+
+sf::Texture backgroundTexture; // Texture that will be used for the background tiles
+sf::Texture playerTexture; // Texture that will be used for the background tiles
+sf::Texture kittyTexture; // Texture that will be used for the background tiles
+
+AnimatedRect menuPlayerRect;
+AnimatedRect menuKittyRect;
+
+float anim_time = 0.0f;
+
+void CreateBackground() {
+    backgroundTexture.loadFromFile("images/TilesImage.png");
+    backgroundTexture.setSmooth(false);
+    playerTexture.loadFromFile("images/PlayerImage.png");
+    playerTexture.setSmooth(false);
+    kittyTexture.loadFromFile("images/menu/KittyImage.png");
+    kittyTexture.setSmooth(false);
+
+    for (int y = 0; y < gameMapSize.y; ++y) {
+        std::vector<AnimatedRect> backgroundRow;
+        for (int x = 0; x < gameMapSize.x; ++x) {
+            AnimatedRect tile;
+            sf::Vector2f tilePos(x * spriteScreenSize.x, y * spriteScreenSize.y); // Position in pixels
+
+            int tileType;
+
+            if (y == gameMapSize.y - 1) {
+                int tileTypex = x % 2;
+                tileType = 51 + tileTypex;
+            }
+            else {
+                int tileTypex = x % 2;
+                int tileTypey = (y % 2) * 2;  // 0 for even rows, 2 for odd rows
+                tileType = 26 + tileTypex + tileTypey; // Whatever formula you use to set the tile type
+            }
+
+            tile.Create(sf::Vector2f(x, y), sf::Vector2f(32, 32), spriteScreenSize, spriteImageSize, tileType, 1, 120.0f);
+            backgroundRow.push_back(tile);
+        }
+        backgroundRects.push_back(backgroundRow);
+    }
+
+    menuPlayerRect.Create(sf::Vector2f(2, 13), sf::Vector2f(32, 32), spriteScreenSize, spriteImageSize, 1, 2, 0.08f);
+    menuKittyRect.Create(sf::Vector2f(18.75, 11), sf::Vector2f(32, 32), sf::Vector2f(64, 64), sf::Vector2f(32, 32), 0, 1, 120.0f);
+}
+
+float tileSpeed = 2.0f; // Speed of background movement in pixels per frame
+float globalOffsetX = 0.0f; // Global X offset for all tiles
+
+void UpdateBackground(float deltaTime) {
+    // Update the global offset
+    globalOffsetX -= tileSpeed * deltaTime;
+
+    // If it goes off the screen, adjust it back
+    while (globalOffsetX <= -2) {
+        globalOffsetX += 2;
+    }
+}
+
+sf::Vector2f kitty_offset;// = sf::Vector2f(1, 1);
+
+void DrawBackground(sf::RenderWindow& window, float deltaTime) {
+    UpdateBackground(deltaTime); // First update the positions
+
+    anim_time += deltaTime;
+
+    kitty_offset.x = 1.25f * std::sin(3.3f * anim_time);
+    kitty_offset.y = 0.5f * std::cos(4.3f * anim_time);
+
+    for (auto& row : backgroundRects) {
+        for (auto& tile : row) {
+            tile.draw(window, backgroundTexture, sf::Vector2f(-globalOffsetX, 0), 0);
+        }
+    }
+    menuPlayerRect.draw(window, playerTexture, sf::Vector2f(0, 0), anim_time);
+    menuKittyRect.draw(window, kittyTexture, kitty_offset, anim_time);
+}
+
+
+
+
+
+class MenuButton {
+public:
+    sf::Texture buttonOnTexture;
+    sf::Texture buttonOffTexture;
+    sf::Sprite buttonSprite;
+    sf::Vector2f buttonPos;
+
+    MyText buttonText;
+
+    bool mouseOver = false;
+    bool beingPressed = false;
+
+    bool clicked = false;
+
+    MenuButton() {}
+
+    MenuButton(std::string textContents, sf::Font& font, int fontSize, sf::Vector2f _screenSize, sf::Vector2f _pos, std::string buttonOnFile, std::string buttonOffFile) {
+        buttonPos = _pos;
+
+        buttonOnTexture.loadFromFile(buttonOnFile);
+        buttonOffTexture.loadFromFile(buttonOffFile);
+        buttonSprite.setScale(2, 2);
+        buttonSprite.setPosition(_pos);
+
+        buttonText = MyText(textContents, font, fontSize, _screenSize, _pos, false);
+    }
+
+    void Step(sf::Vector2i mousePos, bool mousePressed) {
+        clicked = false;
+
+        sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
+        if (buttonSprite.getGlobalBounds().contains(mousePosF)) {
+            mouseOver = true;
+        } else {
+            mouseOver = false;
+        }
+
+        if (mousePressed || !mouseOver) {
+            buttonSprite.setTexture(buttonOffTexture);
+        }
+        else if (mouseOver) {
+            buttonSprite.setTexture(buttonOnTexture);
+        }
+
+        if (mousePressed && mouseOver) {
+            beingPressed = true;
+        }
+
+        if (beingPressed && !mousePressed && mouseOver) {
+            clicked = true;
+            beingPressed = false;
+        }
+        else if (!mouseOver) {
+            beingPressed = false;
+        }
+    }
+
+    void Draw(sf::RenderTarget& target, sf::RenderTarget& TextTexture) {
+        // Draw the button sprite
+        target.draw(buttonSprite);
+
+        // Update the position of the text to be centered with respect to the sprite
+        sf::FloatRect spriteBounds = buttonSprite.getGlobalBounds();
+        sf::FloatRect textBounds = buttonText.text.getLocalBounds();
+
+        sf::Vector2f spriteCenter(
+            spriteBounds.left + spriteBounds.width / 2,
+            spriteBounds.top + spriteBounds.height / 2
+        );
+
+        sf::Vector2f textCenter(
+            textBounds.left + textBounds.width / 2,
+            textBounds.top + textBounds.height / 2
+        );
+
+        // Set the position of the text so that its center aligns with the center of the sprite
+        buttonText.text.setPosition(
+            spriteCenter.x - textCenter.x,
+            spriteCenter.y - textCenter.y
+        );
+
+        // Draw the button text
+        TextTexture.draw(buttonText.text);
+    }
+};
+
+
 class RobotWantsAKitty {
 public:
+    bool onTitleScreen = true;
+
     sf::RenderWindow window;
 
     sf::Vector2i lastWindowPosition;
 
     bool windowHasFocus = true;
 
+    bool mouseClicked = false;
+
     sf::Font font;
     MyText timeText;
     MyText resumeText;
     MyText popupText;
 
+    MyText copyrightCreditsText;
+    MyText musicCreditsText;
+
     MyText startText;
+
+    MenuButton playButton;
+    MenuButton huhButton;
+    MenuButton maxGamesButton;
+    MenuButton backButton;
+
+    sf::Texture cursorTexture;
+    sf::Sprite cursorSprite;
+
+    sf::Texture titleScreenTexture;
+    sf::Sprite titleScreen;
 
     sf::Texture pauseScreenTexture;
     sf::Sprite pauseScreen;
@@ -58,6 +257,7 @@ public:
     Player player;
     GameMap gameMap;
 
+    sf::Music song0;
     sf::Music song1;
     sf::Music song2;
     sf::Music song3;
@@ -68,13 +268,26 @@ public:
     sf::View view;
 
     RobotWantsAKitty(unsigned int screenWidth, unsigned int screenHeight) {
+        song0.openFromFile("sounds/menu/titleSong.mp3");
         song1.openFromFile("sounds/song1.mp3");
         song2.openFromFile("sounds/song2.mp3");
         song3.openFromFile("sounds/song3.mp3");
 
+        song0.setVolume(100.0f);
         song1.setVolume(100.0f);
         song2.setVolume(100.0f);
         song3.setVolume(100.0f);
+
+        cursorTexture.loadFromFile("images/menu/CursorImage.png");
+        cursorSprite.setTexture(cursorTexture);
+        cursorSprite.setScale(2, 2);
+
+        titleScreenTexture.loadFromFile("images/menu/TitleImage.png");
+        titleScreenTexture.setSmooth(false);
+        titleScreen.setTexture(titleScreenTexture);
+        titleScreen.setScale(2, 2);
+        titleScreen.setOrigin(-titleScreen.getLocalBounds().width * 0.5f, -titleScreen.getLocalBounds().height * 0.0f);
+        titleScreen.setPosition(0, 20);
 
         pauseScreenTexture.loadFromFile("images/Instructions.png");
         pauseScreenTexture.setSmooth(false);
@@ -88,9 +301,17 @@ public:
 
         previousPlayerPosition = player.playerRect.pos;
 
-        font.loadFromFile("fonts/Nokia Cellphone.ttf");
+        if (!font.loadFromFile("fonts/Nokia Cellphone.ttf")) {
+            std::cout << "font not loaded" << std::endl;
+        }
 
         sf::Vector2f screenSize = sf::Vector2f(screenWidth, screenHeight);
+
+        playButton = MenuButton("Play Game", font, 16, screenSize, sf::Vector2f(screenWidth * 0.15f, screenHeight * 0.575f), "images/menu/BtnOnImage.png", "images/menu/BtnOffImage.png");
+        huhButton = MenuButton("Huh!?", font, 16, screenSize, sf::Vector2f(screenWidth * 0.65f, screenHeight * 0.575f), "images/menu/BtnOnImage.png", "images/menu/BtnOffImage.png");
+        maxGamesButton = MenuButton("Play More Games at Maxgames.com", font, 16, screenSize, sf::Vector2f(screenWidth * 0.205f, screenHeight * 0.75f), "images/menu/BtnOnBigImage.png", "images/menu/BtnOffBigImage.png");
+
+        backButton = MenuButton("Back", font, 16, screenSize, sf::Vector2f(screenWidth * 0.4f, screenHeight * 0.885f), "images/menu/BtnOnImage.png", "images/menu/BtnOffImage.png");
 
         timeText = MyText("", font, 16, screenSize, sf::Vector2f(4, 5));
 
@@ -99,6 +320,9 @@ public:
         popupText = MyText("Arrow keys to move!", font, 16, screenSize, sf::Vector2f(0.5f, 0.425f), true);
 
         startText = MyText("Collect power-ups to jump, shoot, and more!", font, 16, screenSize, sf::Vector2f(0.5f, 0.614f), true);
+
+        copyrightCreditsText = MyText("Copyright 2010, Hamumu Software", font, 16, screenSize, sf::Vector2f(screenWidth * 0.005f, screenHeight * 0.96f));
+        musicCreditsText = MyText("Music by DrPetter", font, 16, screenSize, sf::Vector2f(screenWidth * 0.72f, screenHeight * 0.96f));
 
         TextTexture.create(screenWidth, screenHeight);
         TextTexture.setSmooth(false);
@@ -126,6 +350,8 @@ public:
         FrameTime = FrameClock.getElapsedTime().asSeconds();
         AnimationTime = 0.0f;
 
+        CreateBackground();
+
         resetGame();
     }
 
@@ -136,7 +362,7 @@ public:
 
         player.reset();
 
-        song1.play();
+        //song1.play();
     }
 
     void Run() {
@@ -151,7 +377,7 @@ public:
                     window.close();
                     break;
                 }
-                if (event.type == sf::Event::Resized)
+                else if (event.type == sf::Event::Resized)
                 {
                     sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
 
@@ -181,13 +407,25 @@ public:
                 }
                 else if (event.type == sf::Event::LostFocus) {
                     windowHasFocus = false;
+                    song0.pause();
                     break;
                 }
-                if (event.type == sf::Event::GainedFocus) {
+                else if (event.type == sf::Event::GainedFocus) {
                     windowHasFocus = true;
+                    song0.play();
                     break;
                 }
-                if (event.type == sf::Event::KeyPressed) {
+                else if (event.type == sf::Event::MouseButtonPressed) {
+                    if (event.mouseButton.button == sf::Mouse::Left) {
+                        mouseClicked = true;
+                    }
+                }
+                else if (event.type == sf::Event::MouseButtonReleased) {
+                    if (event.mouseButton.button == sf::Mouse::Left) {
+                        mouseClicked = false;
+                    }
+                }
+                else if (event.type == sf::Event::KeyPressed) {
                     if (event.key.code == sf::Keyboard::C) {
                         player.specialPressed = true;
                     }
@@ -203,13 +441,15 @@ public:
                 }
             }
 
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
             FrameClock.restart();
 
             window.clear(sf::Color::Black);
             TextTexture.clear(sf::Color::Transparent);
             PopupTextTexture.clear(sf::Color::Transparent);
 
-            if (!victory) {
+            if (!victory && !onTitleScreen) {
                 if (song1.getStatus() == sf::Music::Stopped && song2.getStatus() == sf::Music::Stopped && song3.getStatus() == sf::Music::Stopped) {
                     int nextSong = rand() % 3;
                     if (nextSong == 0) {
@@ -224,7 +464,77 @@ public:
                 }
             }
 
-            if (victory) {
+            if (paused || !windowHasFocus) {
+                window.draw(pauseScreen);
+
+                if (onTitleScreen) {
+                    backButton.Step(mousePos, mouseClicked);
+                    backButton.Draw(window, TextTexture);
+
+                    cursorSprite.setPosition(mousePos.x, mousePos.y);
+                    window.draw(cursorSprite);
+
+                    if (backButton.clicked) {
+                        paused = false;
+                    }
+                }
+                else {
+                    TextTexture.draw(resumeText.text);
+                }
+
+                TextTexture.display();
+
+                TextSprite.setTexture(TextTexture.getTexture());
+
+                window.draw(TextSprite);
+                window.display();
+            }
+            else if (onTitleScreen) {
+                if (song0.getStatus() == sf::Music::Stopped) {
+                    song0.play();
+                }
+
+                DrawBackground(window, FrameTime);
+
+                playButton.Step(mousePos, mouseClicked);
+                huhButton.Step(mousePos, mouseClicked);
+                maxGamesButton.Step(mousePos, mouseClicked);
+
+                playButton.Draw(window, TextTexture);
+                huhButton.Draw(window, TextTexture);
+                maxGamesButton.Draw(window, TextTexture);
+
+
+                TextTexture.draw(copyrightCreditsText.text);
+                TextTexture.draw(musicCreditsText.text);
+
+
+                TextTexture.display();
+                TextSprite.setTexture(TextTexture.getTexture());
+                window.draw(TextSprite);
+
+
+                window.draw(titleScreen);
+
+
+
+
+                cursorSprite.setPosition(mousePos.x, mousePos.y);
+                window.draw(cursorSprite);
+                window.display();
+
+                if (playButton.clicked) {
+                    onTitleScreen = false;
+                    song0.stop();
+                }
+                else if (huhButton.clicked) {
+                    paused = true;
+                }
+                else if (maxGamesButton.clicked) {
+                    ShellExecute(NULL, L"open", L"https://maxgames.com", NULL, NULL, SW_SHOWNORMAL);
+                }
+            }
+            else if (victory) {
                 window.draw(winScreen);
 
                 timeText.UpdateText("Total Time: " + formatTimeFromSeconds(player.RunningTime));
@@ -320,16 +630,6 @@ public:
                 if (startText.text.getString() != "" && AnimationTime > popupTextDesiredScreenTime + popupTextDesiredFadeOutTime) {
                     startText.UpdateText("");
                 }
-            }
-            else {
-                window.draw(pauseScreen);
-                TextTexture.draw(resumeText.text);
-                TextTexture.display();
-
-                TextSprite.setTexture(TextTexture.getTexture());
-
-                window.draw(TextSprite);
-                window.display();
             }
 
             FrameTime = FrameClock.restart().asSeconds();
