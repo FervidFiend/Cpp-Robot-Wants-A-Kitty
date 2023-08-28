@@ -1,5 +1,10 @@
 # Cpp-Robot-Wants-A-Kitty
-My C++ Remake of the old (2010?) flash game Robot Wants A Kitty.
+My C++ Remake of the old (2010?) flash game Robot Wants A Kitty ([https://www.maxgames.com/play/robot-wants-kitty.html](https://www.maxgames.com/play/robot-wants-kitty.html)).
+
+# Credits
+All credits and huge respect goes to Mike Hommel ([Hamumu Software](https://hamumu.com)), Tomas Pettersson ([DrPetter](http://drpetter.se)), MaxGames ([https://maxgames.com](https://maxgames.com)) as well as Laurent Gomila and the rest of the people working on [SFML](https://www.sfml-dev.org) for making this possible (please let me know if i missed anyone)
+
+
 
 # Screenshots
 
